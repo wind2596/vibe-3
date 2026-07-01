@@ -1,11 +1,32 @@
-from pydantic import BaseModel
+﻿from pydantic import BaseModel, Field
 
 
-class ScheduleItem(BaseModel):
+class ScheduleBase(BaseModel):
+    member_id: int = Field(gt=0)
+    category: str = Field(min_length=1, max_length=40)
+    title: str = Field(min_length=1, max_length=120)
+    start_at: str = Field(min_length=1, max_length=32)
+    end_at: str = Field(min_length=1, max_length=32)
+    memo: str | None = Field(default=None, max_length=500)
+    all_day: bool = False
+
+
+class ScheduleCreate(ScheduleBase):
+    pass
+
+
+class ScheduleUpdate(BaseModel):
+    member_id: int | None = Field(default=None, gt=0)
+    category: str | None = Field(default=None, min_length=1, max_length=40)
+    title: str | None = Field(default=None, min_length=1, max_length=120)
+    start_at: str | None = Field(default=None, min_length=1, max_length=32)
+    end_at: str | None = Field(default=None, min_length=1, max_length=32)
+    memo: str | None = Field(default=None, max_length=500)
+    all_day: bool | None = None
+
+
+class ScheduleItem(ScheduleBase):
     id: int
-    user_id: int | None
-    category: str
-    title: str
-    start_at: str
-    end_at: str
-    memo: str | None = None
+    member_name: str | None = None
+    created_at: str
+    updated_at: str | None = None

@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $backendPython = Join-Path $root 'backend\.venv\Scripts\python.exe'
@@ -7,19 +7,36 @@ if (-not (Test-Path $backendPython)) {
   throw "Backend virtual environment not found: $backendPython"
 }
 
-Write-Host 'Starting backend on http://127.0.0.1:8000 ...'
+Write-Host 'Starting backend on http://127.0.0.1:8001 ...'
 $backend = Start-Process `
   -FilePath $backendPython `
-  -ArgumentList @('-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8000') `
+  -ArgumentList @('-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8001') `
   -WorkingDirectory (Join-Path $root 'backend') `
   -PassThru `
   -WindowStyle Hidden
+
+Write-Host 'Waiting for backend health check...'
+$backendReady = $false
+for ($attempt = 1; $attempt -le 30; $attempt++) {
+  try {
+    Invoke-RestMethod 'http://127.0.0.1:8001/api/health' | Out-Null
+    $backendReady = $true
+    break
+  } catch {
+    Start-Sleep -Seconds 1
+  }
+}
+
+if (-not $backendReady) {
+  Stop-Process -Id $backend.Id -Force -ErrorAction SilentlyContinue
+  throw 'Backend did not become ready on http://127.0.0.1:8001/api/health'
+}
 
 Write-Host 'Starting frontend on http://127.0.0.1:5173 ...'
 $npmCmd = (Get-Command npm.cmd).Source
 $frontend = Start-Process `
   -FilePath $npmCmd `
-  -ArgumentList @('--prefix', 'frontend', 'run', 'dev', '--', '--host', '127.0.0.1') `
+  -ArgumentList @('--prefix', 'frontend', 'run', 'dev:frontend', '--', '--host', '127.0.0.1') `
   -WorkingDirectory $root `
   -PassThru `
   -WindowStyle Hidden
