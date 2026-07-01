@@ -1,0 +1,9 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Public-sector admin super app backend scaffold"
+requires-python = ">=3.14"
+dependencies = [
+  "fastapi>=0.138.2",
+  "uvicorn>=0.35.0",
+]
