@@ -1,5 +1,7 @@
-﻿import type { HealthResponse } from '../types/health';
+import type { ExcelInspectResponse, ExcelPreviewResponse } from '../types/excel';
+import type { HealthResponse } from '../types/health';
 import type { MemberFormState, MemberItem } from '../types/member';
+import type { NewsJob, NewsListResponse, NewsSyncResponse } from '../types/news';
 import type { ScheduleFormState, ScheduleItem } from '../types/schedule';
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -24,6 +26,30 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (response.status === 204) {
     return undefined as T;
+  }
+
+  return (await response.json()) as T;
+}
+
+async function requestBinaryJson<T>(url: string, file: File): Promise<T> {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'X-Filename': encodeURIComponent(file.name),
+    },
+    body: file,
+  });
+
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      const payload = await response.json();
+      detail = typeof payload?.detail === 'string' ? payload.detail : JSON.stringify(payload);
+    } catch {
+      // ignore parse failure
+    }
+    throw new Error(detail || `Request failed with status ${response.status}`);
   }
 
   return (await response.json()) as T;
@@ -114,4 +140,73 @@ export async function updateSchedule(scheduleId: number, payload: ScheduleFormSt
 
 export async function deleteSchedule(scheduleId: number): Promise<void> {
   await requestJson<void>(`/api/schedules/${scheduleId}`, { method: 'DELETE' });
+}
+
+export async function getNews(params: { published_date?: string } = {}): Promise<NewsListResponse> {
+  return requestJson<NewsListResponse>(`/api/news${toQuery(params)}`);
+}
+
+export async function syncNews(targetDate: string): Promise<NewsSyncResponse> {
+  return requestJson<NewsSyncResponse>('/api/news/sync', {
+    method: 'POST',
+    body: JSON.stringify({ target_date: targetDate }),
+  });
+}
+
+export async function getLatestNewsSync(): Promise<NewsJob | null> {
+  return requestJson<NewsJob | null>('/api/news/sync/latest');
+}
+
+export async function inspectExcel(file: File, sheetName?: string): Promise<ExcelInspectResponse> {
+  const url = new URL('/api/excel/inspect', window.location.origin);
+  if (sheetName) {
+    url.searchParams.set('sheet_name', sheetName);
+  }
+  return requestBinaryJson<ExcelInspectResponse>(url.toString(), file);
+}
+
+export async function previewExcel(
+  file: File,
+  options: { sheetName?: string; mode: 'split' | 'merge'; keyColumns: string[] },
+): Promise<ExcelPreviewResponse> {
+  const url = new URL('/api/excel/preview', window.location.origin);
+  if (options.sheetName) {
+    url.searchParams.set('sheet_name', options.sheetName);
+  }
+  url.searchParams.set('mode', options.mode);
+  url.searchParams.set('key_columns', options.keyColumns.join(','));
+  return requestBinaryJson<ExcelPreviewResponse>(url.toString(), file);
+}
+
+export async function downloadExcel(
+  file: File,
+  options: { sheetName?: string; mode: 'split' | 'merge'; keyColumns: string[] },
+): Promise<Blob> {
+  const url = new URL('/api/excel/transform', window.location.origin);
+  if (options.sheetName) {
+    url.searchParams.set('sheet_name', options.sheetName);
+  }
+  url.searchParams.set('mode', options.mode);
+  url.searchParams.set('key_columns', options.keyColumns.join(','));
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'X-Filename': encodeURIComponent(file.name),
+    },
+    body: file,
+  });
+
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      const payload = await response.json();
+      detail = typeof payload?.detail === 'string' ? payload.detail : JSON.stringify(payload);
+    } catch {
+      // ignore parse failure
+    }
+    throw new Error(detail || `Request failed with status ${response.status}`);
+  }
+
+  return await response.blob();
 }

@@ -4,6 +4,10 @@ version = "0.1.0"
 description = "Public-sector admin super app backend scaffold"
 requires-python = ">=3.14"
 dependencies = [
+  "beautifulsoup4>=4.13.4",
   "fastapi>=0.138.2",
+  "openpyxl>=3.1.5",
+  "pandas>=3.0.0",
+  "requests>=2.32.5",
   "uvicorn>=0.35.0",
 ]

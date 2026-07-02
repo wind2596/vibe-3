@@ -50,6 +50,24 @@ TABLE_STATEMENTS = {
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     ''',
+    'news_articles': '''
+        CREATE TABLE IF NOT EXISTS news_articles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source TEXT NOT NULL,
+            source_article_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            subtitle TEXT,
+            summary TEXT,
+            content TEXT,
+            ministry TEXT,
+            published_date TEXT NOT NULL,
+            url TEXT NOT NULL,
+            thumbnail_url TEXT,
+            collected_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(source, source_article_id)
+        )
+    ''',
 }
 
 COLUMN_MIGRATIONS = {
@@ -66,6 +84,14 @@ COLUMN_MIGRATIONS = {
     'job_runs': {
         'updated_at': 'TEXT DEFAULT CURRENT_TIMESTAMP',
     },
+    'news_articles': {
+        'subtitle': 'TEXT',
+        'summary': 'TEXT',
+        'content': 'TEXT',
+        'ministry': 'TEXT',
+        'thumbnail_url': 'TEXT',
+        'updated_at': 'TEXT DEFAULT CURRENT_TIMESTAMP',
+    },
 }
 
 INDEX_STATEMENTS = [
@@ -73,6 +99,9 @@ INDEX_STATEMENTS = [
     'CREATE INDEX IF NOT EXISTS idx_schedules_user_id_start_at ON schedules(user_id, start_at)',
     'CREATE INDEX IF NOT EXISTS idx_schedules_start_at ON schedules(start_at)',
     'CREATE INDEX IF NOT EXISTS idx_schedules_end_at ON schedules(end_at)',
+    'CREATE INDEX IF NOT EXISTS idx_news_articles_published_date ON news_articles(published_date)',
+    'CREATE INDEX IF NOT EXISTS idx_news_articles_ministry ON news_articles(ministry)',
+    'CREATE INDEX IF NOT EXISTS idx_job_runs_job_type_created_at ON job_runs(job_type, created_at)',
 ]
 
 

@@ -6,11 +6,11 @@ import { NewsPage } from './pages/NewsPage';
 import { SchedulePage } from './pages/SchedulePage';
 
 const navigation = [
-  { to: '/', label: '대시보드' },
-  { to: '/schedule', label: '스케줄' },
-  { to: '/excel', label: '엑셀 자동화' },
-  { to: '/chatbot', label: '민원 챗봇' },
-  { to: '/news', label: '뉴스 수집' },
+  { to: '/', label: 'Dashboard' },
+  { to: '/schedule', label: 'Schedule' },
+  { to: '/excel', label: 'Excel' },
+  { to: '/chatbot', label: 'Chatbot' },
+  { to: '/news', label: 'News' },
 ];
 
 export default function App() {
@@ -19,8 +19,8 @@ export default function App() {
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-badge">Public Sector</span>
-          <h1>행정업무 슈퍼앱</h1>
-          <p>문서 기반 업무 구조 스캐폴드</p>
+          <h1>Admin Super App</h1>
+          <p>Simple workspace for document-driven operations</p>
         </div>
 
         <nav className="nav">
@@ -37,7 +37,7 @@ export default function App() {
         </nav>
 
         <div className="sidebar-note">
-          FE-BE 연결은 <code>/api/health</code>를 통해 확인한다.
+          FE-BE connection is checked through <code>/api/health</code>
         </div>
       </aside>
 
