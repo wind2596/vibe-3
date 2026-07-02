@@ -37,7 +37,7 @@ export default function App() {
         </nav>
 
         <div className="sidebar-note">
-          FE-BE connection is checked through <code>/api/health</code>
+          백엔드 URL은 대시보드에서 설정하고 <code>/api/health</code> 로 테스트한다.
         </div>
       </aside>
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { SectionCard } from '../components/SectionCard';
 import { StatusPill } from '../components/StatusPill';
-import { getHealth } from '../lib/api';
+import { getBackendBaseUrl, getHealth, setBackendBaseUrl, testBackendConnection } from '../lib/api';
 import type { HealthResponse } from '../types/health';
 
 const initialHealth: HealthResponse = {
@@ -21,6 +21,9 @@ const initialHealth: HealthResponse = {
 export function DashboardPage() {
   const [health, setHealth] = useState<HealthResponse>(initialHealth);
   const [error, setError] = useState<string | null>(null);
+  const [backendUrl, setBackendUrl] = useState(() => getBackendBaseUrl());
+  const [testState, setTestState] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [testMessage, setTestMessage] = useState<string>('아직 테스트하지 않았습니다.');
 
   useEffect(() => {
     let mounted = true;
@@ -42,6 +45,24 @@ export function DashboardPage() {
       mounted = false;
     };
   }, []);
+
+  async function handleConnectionTest() {
+    const normalizedUrl = setBackendBaseUrl(backendUrl);
+    setBackendUrl(normalizedUrl);
+    setTestState('testing');
+    setTestMessage('연결 테스트 중...');
+
+    try {
+      const result = await testBackendConnection(normalizedUrl);
+      setHealth(result);
+      setError(null);
+      setTestState('success');
+      setTestMessage(`${result.service} ${result.api.version} 연결 성공`);
+    } catch (reason: unknown) {
+      setTestState('error');
+      setTestMessage(reason instanceof Error ? reason.message : 'Unknown error');
+    }
+  }
 
   return (
     <div className="page-stack">
@@ -73,6 +94,35 @@ export function DashboardPage() {
       {error ? <div className="alert">헬스체크 실패: {error}</div> : null}
 
       <div className="two-column">
+        <SectionCard
+          title="백엔드 URL 설정"
+          description="GitHub Pages에서는 Cloudflared Tunnel URL을 입력해서 백엔드에 직접 연결한다."
+        >
+          <div className="connection-panel">
+            <label className="field">
+              <span>백엔드 URL</span>
+              <input
+                value={backendUrl}
+                onChange={(event) => setBackendUrl(event.target.value)}
+                placeholder="예: https://your-tunnel.trycloudflare.com"
+              />
+            </label>
+            <p>
+              비워두면 현재 도메인의 <code>/api</code> 경로를 사용한다. 로컬 개발에서는 Vite proxy가
+              <code> http://127.0.0.1:8001</code> 로 전달한다.
+            </p>
+            <div className="action-row">
+              <button className="primary-button" type="button" onClick={handleConnectionTest} disabled={testState === 'testing'}>
+                연결 테스트
+              </button>
+            </div>
+            <div className={`connection-result connection-result--${testState}`}>
+              <strong>{testState === 'success' ? '성공' : testState === 'error' ? '실패' : '상태'}</strong>
+              <span>{testMessage}</span>
+            </div>
+          </div>
+        </SectionCard>
+
         <SectionCard title="FE 페이지 구조" description="문서 기준으로 페이지를 먼저 나눈다.">
           <ul className="feature-list">
             <li>대시보드</li>

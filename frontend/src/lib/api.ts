@@ -4,8 +4,35 @@ import type { MemberFormState, MemberItem } from '../types/member';
 import type { NewsJob, NewsListResponse, NewsSyncResponse } from '../types/news';
 import type { ScheduleFormState, ScheduleItem } from '../types/schedule';
 
-async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
+const backendUrlStorageKey = 'public-sector-admin.backendBaseUrl';
+
+function normalizeBackendBaseUrl(value: string): string {
+  return value.trim().replace(/\/+$/, '');
+}
+
+export function getBackendBaseUrl(): string {
+  const storedValue = window.localStorage.getItem(backendUrlStorageKey);
+  if (storedValue !== null) {
+    return normalizeBackendBaseUrl(storedValue);
+  }
+  return normalizeBackendBaseUrl(import.meta.env.VITE_API_BASE_URL ?? '');
+}
+
+export function setBackendBaseUrl(value: string): string {
+  const normalizedValue = normalizeBackendBaseUrl(value);
+  window.localStorage.setItem(backendUrlStorageKey, normalizedValue);
+  return normalizedValue;
+}
+
+function buildApiUrl(path: string, baseUrl = getBackendBaseUrl()): string {
+  if (!baseUrl) {
+    return path;
+  }
+  return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+async function requestJson<T>(path: string, init?: RequestInit, baseUrl?: string): Promise<T> {
+  const response = await fetch(buildApiUrl(path, baseUrl), {
     headers: {
       'Content-Type': 'application/json',
       ...(init?.headers ?? {}),
@@ -31,8 +58,8 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-async function requestBinaryJson<T>(url: string, file: File): Promise<T> {
-  const response = await fetch(url, {
+async function requestBinaryJson<T>(path: string, file: File): Promise<T> {
+  const response = await fetch(buildApiUrl(path), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/octet-stream',
@@ -68,6 +95,10 @@ function toQuery(params: Record<string, string | number | undefined>): string {
 
 export async function getHealth(): Promise<HealthResponse> {
   return requestJson<HealthResponse>('/api/health');
+}
+
+export async function testBackendConnection(baseUrl: string): Promise<HealthResponse> {
+  return requestJson<HealthResponse>('/api/health', undefined, normalizeBackendBaseUrl(baseUrl));
 }
 
 export async function getMembers(): Promise<MemberItem[]> {
@@ -158,37 +189,37 @@ export async function getLatestNewsSync(): Promise<NewsJob | null> {
 }
 
 export async function inspectExcel(file: File, sheetName?: string): Promise<ExcelInspectResponse> {
-  const url = new URL('/api/excel/inspect', window.location.origin);
+  const url = new URL('/api/excel/inspect', 'http://local.invalid');
   if (sheetName) {
     url.searchParams.set('sheet_name', sheetName);
   }
-  return requestBinaryJson<ExcelInspectResponse>(url.toString(), file);
+  return requestBinaryJson<ExcelInspectResponse>(`${url.pathname}${url.search}`, file);
 }
 
 export async function previewExcel(
   file: File,
   options: { sheetName?: string; mode: 'split' | 'merge'; keyColumns: string[] },
 ): Promise<ExcelPreviewResponse> {
-  const url = new URL('/api/excel/preview', window.location.origin);
+  const url = new URL('/api/excel/preview', 'http://local.invalid');
   if (options.sheetName) {
     url.searchParams.set('sheet_name', options.sheetName);
   }
   url.searchParams.set('mode', options.mode);
   url.searchParams.set('key_columns', options.keyColumns.join(','));
-  return requestBinaryJson<ExcelPreviewResponse>(url.toString(), file);
+  return requestBinaryJson<ExcelPreviewResponse>(`${url.pathname}${url.search}`, file);
 }
 
 export async function downloadExcel(
   file: File,
   options: { sheetName?: string; mode: 'split' | 'merge'; keyColumns: string[] },
 ): Promise<Blob> {
-  const url = new URL('/api/excel/transform', window.location.origin);
+  const url = new URL('/api/excel/transform', 'http://local.invalid');
   if (options.sheetName) {
     url.searchParams.set('sheet_name', options.sheetName);
   }
   url.searchParams.set('mode', options.mode);
   url.searchParams.set('key_columns', options.keyColumns.join(','));
-  const response = await fetch(url.toString(), {
+  const response = await fetch(buildApiUrl(`${url.pathname}${url.search}`), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/octet-stream',

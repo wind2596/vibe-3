@@ -435,6 +435,39 @@ code {
   border-color: rgba(180, 35, 24, 0.14);
 }
 
+.connection-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.connection-panel p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.connection-result {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-alt);
+}
+
+.connection-result span {
+  color: var(--muted);
+  word-break: break-word;
+}
+
+.connection-result--success strong {
+  color: var(--success);
+}
+
+.connection-result--error strong {
+  color: var(--danger);
+}
+
 .excel-page {
   gap: 22px;
 }
